@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:os-core="http://www.openspaces.org/schema/core" xmlns:os-events="http://www.openspaces.org/schema/events"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:os-remoting="http://www.openspaces.org/schema/remoting"
+	xmlns:os-sla="http://www.openspaces.org/schema/sla"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+      http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+      http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.0.xsd        
+      http://www.openspaces.org/schema/core http://www.openspaces.org/schema/core/openspaces-core.xsd
+      http://www.openspaces.org/schema/events http://www.openspaces.org/schema/events/openspaces-events.xsd
+      http://www.openspaces.org/schema/remoting http://www.openspaces.org/schema/remoting/openspaces-remoting.xsd
+		">
+
+	<context:component-scan base-package="com.gigaspaces.streaming.services" />
+	<os-remoting:annotation-support/>
+	<os-core:giga-space-context/>
+
+	<bean id="propertiesConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<!-- defaults -->
+		<property name="properties">
+			<props>
+				<prop key="akey">aval</prop>
+			</props>
+		</property>
+	</bean>
+
+	<os-core:space id="space" url="/./streamspace" />
+	<os-core:local-tx-manager id="transactionManager"
+		space="space" />
+	<os-core:giga-space id="gigaSpace" space="space"
+		tx-manager="transactionManager" />
+		
+	<os-remoting:service-exporter id="serviceExporter" /> 
+</beans>

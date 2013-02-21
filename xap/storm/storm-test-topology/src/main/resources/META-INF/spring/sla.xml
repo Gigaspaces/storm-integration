@@ -1,0 +1,26 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:os-sla="http://www.openspaces.org/schema/sla"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.openspaces.org/schema/sla 
+	   http://www.openspaces.org/schema/8.0/sla/openspaces-sla.xsd">
+
+	<bean id="propertiesConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<!-- defaults -->
+		<property name="properties">
+			<props>
+				<prop key="space.partitions">2</prop>
+				<prop key="space.backups">0</prop>
+			</props>
+		</property>
+	</bean>
+
+	<os-sla:sla cluster-schema="partitioned-sync2backup"
+			number-of-instances="${space.partitions}"
+			number-of-backups="${space.backups}"
+			max-instances-per-vm="1" 
+	/>
+	
+</beans>
