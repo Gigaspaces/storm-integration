@@ -1,4 +1,4 @@
-storm-integration
+storm-integration  --- EXPERIMENTAL ---
 =================
 
 ##XAP/Storm integration
