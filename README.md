@@ -11,11 +11,18 @@ Oddly enough, the central service recipes are not stored here, but are contained
 
 #####Recipes
 * xap9.1-lite service
+  Single node XAP 9.1 Lite recipe.  Uses XAP default for the most part.
 * xapstream service
+  Recipe subclass of xap9.1-lite. Just deploys streaming pu into XAP.
 * streamdriver service
+  Utility recipe that creates/connects to streams and writes tuples for testing.
 
 ####XAP Components
 * storm
+  Storm specific java code.  The XAP Spout and Trident State implementation are here.
 * streamspace-pu
+  The processing unit deployed by xapstream.  XAP resident code that support streaming.
 * storm-test-topology
+  Home of topologies for testing the XAP+Storm infrastructure (e.g. WordCount).
 * streaming
+  Storm independent tuple streaming code that the XAP Spout depends upon.
