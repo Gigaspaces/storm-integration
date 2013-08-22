@@ -1,7 +1,8 @@
 package com.gigaspaces.streaming.services;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.GigaSpaceTypeManager;
@@ -15,8 +16,6 @@ import com.gigaspaces.metadata.SpaceTypeDescriptorBuilder;
 import com.gigaspaces.streaming.client.XAPTupleStream;
 import com.gigaspaces.streaming.model.XAPStreamConfig;
 import com.gigaspaces.streaming.model.XAPTuple;
-import com.j_spaces.core.LeaseContext;
-import com.j_spaces.core.client.UpdateModifiers;
 
 @RemotingService
 public class DefaultXAPTupleStreamService implements XAPTupleStreamService{
@@ -25,13 +24,17 @@ public class DefaultXAPTupleStreamService implements XAPTupleStreamService{
 
 	@Override
 	@Transactional
+	/**
+	 * Creates a stream.  Note that the space reference is not set in the returned
+	 * stream object (caller needs to do this).  TODO - not crazy about this
+	 */
 	public XAPTupleStream createStream(@Routing String streamName, int routingValue,List<String> fields){
 		XAPTupleStream newstream=null;
 
 		if(streamExists(streamName))throw new IllegalArgumentException("stream already exists");
 
-		newstream=new XAPTupleStream(space.getSpace().getURL().toString(),streamName);
-		newstream.setInstance(0);
+		newstream=new XAPTupleStream(streamName);
+		newstream.setInstance(0);     
 		
 		//register tuple types
 		registerTupleTypeFromFields(streamName,0,fields);
@@ -41,21 +44,25 @@ public class DefaultXAPTupleStreamService implements XAPTupleStreamService{
 		cfg.setName(streamName);
 		cfg.setRoutingValue(routingValue);
 		cfg.setFields(fields);
-		space.write(cfg,LeaseContext.FOREVER,1000L,UpdateModifiers.WRITE_ONLY);
+		space.write(cfg);
 
 		return newstream;
 	}
 
 	@Override
+	/**
+	 * "Opens" an existing stream.  Caller must set space property (see newStream)
+	 */
 	public XAPTupleStream openStream(@Routing String streamName) {
 		XAPStreamConfig cfg=space.readById(XAPStreamConfig.class,streamName);
 		if(cfg==null)return null;
-		return new XAPTupleStream(space.getSpace().getURL().toString(),streamName);
+		XAPTupleStream newstream=new XAPTupleStream(streamName);
+		return newstream;
 	}
 
 	@Override
-	public List<String> listStreams() {
-		List<String> list=new ArrayList<String>();
+	public Set<String> listStreams() {
+		Set<String> list=new HashSet<String>();
 		
 		XAPStreamConfig template=new XAPStreamConfig();
 		XAPStreamConfig[] cfgs=space.readMultiple(template);

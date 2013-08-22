@@ -1,13 +1,16 @@
 package com.gigaspaces.storm.spout;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.openspaces.admin.Admin;
-import org.openspaces.admin.AdminFactory;
+import org.openspaces.core.GigaSpace;
+import org.openspaces.core.space.UrlSpaceConfigurer;
 
 import storm.trident.operation.TridentCollector;
 import storm.trident.spout.ITridentSpout;
@@ -15,6 +18,7 @@ import storm.trident.topology.TransactionAttempt;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Fields;
 
+import com.gigaspaces.streaming.client.XAPStreamFactory;
 import com.gigaspaces.streaming.client.XAPTupleStream;
 import com.gigaspaces.streaming.model.XAPStreamBatch;
 import com.gigaspaces.streaming.model.XAPStreamBatch.BatchInfo;
@@ -31,32 +35,30 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 	private static final long serialVersionUID = 1L;
 	private static final Logger log=Logger.getLogger(XAPTridentSpout.class);
 	XAPConfig cfg;
-	transient Admin admin;
 	transient XAPTupleStream stream;
 
 	public XAPTridentSpout(XAPConfig cfg){
 		if(cfg==null)throw new IllegalArgumentException("null config supplied");
 		this.cfg=cfg;
-		this.admin=new AdminFactory().create();
-		log.info("XAP spout created");
+		log.debug("XAP spout created");
 	}
 
 	public Fields getOutputFields() {
+		if(log.isDebugEnabled())log.debug("getOutputFields called, fields:"+getStream().getFieldNames());
 		return new Fields(getStream().getFieldNames());
 	}
-
 
 	@Override
 	public storm.trident.spout.ITridentSpout.BatchCoordinator<BatchInfo> getCoordinator(
 			String txStateId, Map conf, TopologyContext context) {
-		if(log.isDebugEnabled())log.debug("getcoordinator called");	
+		if(log.isEnabledFor(Level.DEBUG))log.debug("getcoordinator called");	
 		return new Coordinator();
 	}
 
 	@Override
 	public storm.trident.spout.ITridentSpout.Emitter<BatchInfo> getEmitter(
 			String txStateId, Map conf, TopologyContext context) {
-		if(log.isDebugEnabled())log.debug("getemitter called");
+		if(log.isEnabledFor(Level.DEBUG))log.debug("getemitter called");
 		return new Emitter();
 	}
 
@@ -64,25 +66,50 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 	public Map getComponentConfiguration() {
 		return null;
 	}
-	
+
 	private XAPTupleStream getStream(){
 		if(stream==null){
-			if(log.isDebugEnabled())log.debug("spout creating stream");
-			stream=new XAPTupleStream(cfg.getUrl(),cfg.getStreamName());
+			if(log.isEnabledFor(Level.DEBUG))log.debug("spout creating stream");
+			//TODO: passing in the host alone isn't good enough.  Forces the stream space 
+			//      to be named "streamspace"
+			XAPStreamFactory fact=new XAPStreamFactory(String.format("jini://*/*/streamspace?locators=%s",cfg.getXapHost()));			
+			Set<String> streams=fact.listStreams();
+			if(streams.contains(cfg.getStreamName())){
+				try{
+					if(log.isDebugEnabled())log.debug("using existing stream");
+					stream=fact.getTupleStream(cfg.getStreamName());
+				}
+				catch(Exception e){
+					if(e instanceof RuntimeException)throw (RuntimeException)e;
+					throw new RuntimeException(e);
+				}
+			}
+			else{
+				if(log.isDebugEnabled())log.debug("creating new tuple stream");
+				stream=fact.createNewTupleStream(cfg.getStreamName(), 0, Arrays.asList(cfg.getFields()));
+			}
 		}
 		return stream;
 	}
 
+
 	class Emitter implements ITridentSpout.Emitter<BatchInfo>{
 		//need to save several in case of pipelining
 		Map<Long,BatchInfo> emitted=new HashMap<Long,BatchInfo>();
+		private transient GigaSpace space=null;
+		private int batchcnt=0;
+		private UrlSpaceConfigurer usc=null;
+
+		public Emitter(){
+		}
 
 		@Override
 		public void emitBatch(TransactionAttempt tx, BatchInfo coordinatorMeta,
 				TridentCollector collector) {
-
+			if(log.isEnabledFor(Level.DEBUG))log.debug("emit batch called, tx="+tx.getTransactionId());
+			long now=System.currentTimeMillis();
 			XAPStreamBatch<XAPTuple> batch=getStream().readBatch(cfg.getBatchSize());		
-			if(log.isDebugEnabled())log.debug("read batch cnt="+batch.getInfo().qty);
+			if(log.isEnabledFor(Level.DEBUG))log.debug("read batch cnt="+batch.getInfo().qty);
 			if(batch.getInfo().qty>0){
 				for(int i=0;i<batch.getEntries().size();i++){
 					List<Object> list=new ArrayList<Object>();
@@ -92,6 +119,7 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 					collector.emit(list);
 				}
 				emitted.put(tx.getTransactionId(),batch.getInfo());
+				
 			}
 			else{
 				try {
@@ -99,25 +127,30 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 				} catch (InterruptedException e) {
 				}
 			}
-			if(log.isDebugEnabled())log.debug(String.format("emit batch called, tx id=%d qty=%d",tx.getTransactionId(),batch.getInfo().qty));
+			if(log.isEnabledFor(Level.DEBUG))log.debug(String.format("emit batch called, tx id=%d qty=%d",tx.getTransactionId(),batch.getInfo().qty));
 		}
 
 		@Override
 		public void success(TransactionAttempt tx) {
-			if(log.isDebugEnabled())log.debug("success called, tx attemptid="+tx.getTransactionId());
-			BatchInfo info=emitted.get(tx.getTransactionId());
-			if(info!=null){
-				getStream().clearBatch(info);
+			if(log.isEnabledFor(Level.DEBUG))log.debug("success called, tx attemptid="+tx.getTransactionId());
+			BatchInfo debug=emitted.get(tx.getTransactionId());
+			if(debug!=null){
+				if(log.isDebugEnabled())log.debug("debug found");
+				getStream().clearBatch(debug);
 				emitted.remove(tx.getTransactionId());
 			}
 			else{
-				log.warn("info null");
+				log.debug("debug null.");
 			}
 		}
 
 		@Override
 		public void close() {
-			if(log.isDebugEnabled())log.debug("close called");
+			if(log.isEnabledFor(Level.DEBUG))log.debug("close called");
+			try{
+				if(usc!=null)usc.destroy();
+			}
+			catch(Exception e){}
 		}
 
 	}
@@ -125,29 +158,30 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 	class Coordinator implements ITridentSpout.BatchCoordinator<BatchInfo>{
 		@Override
 		public BatchInfo initializeTransaction(long txid, BatchInfo prevMetadata) {
-			BatchInfo info=new BatchInfo();
-			info.qty=cfg.getBatchSize();
-			return info;
+			BatchInfo debug=new BatchInfo();
+			debug.qty=cfg.getBatchSize();
+			return debug;
 		}
 
 		@Override
 		public void success(long txid) {
-			if(log.isDebugEnabled())log.debug("coord.success called");
+			if(log.isEnabledFor(Level.DEBUG))log.debug("coord.success called");
 			//noop
 		}
 
 		@Override
 		public boolean isReady(long txid) {
-			if(log.isDebugEnabled())log.debug("coord.isready called");
+			if(log.isEnabledFor(Level.DEBUG))log.debug("coord.isready called");
 			return true;
 		}
 
 		@Override
 		public void close() {
-			if(log.isDebugEnabled())log.debug("coord.close called");
+			if(log.isEnabledFor(Level.DEBUG))log.debug("coord.close called");
 			//noop
 		}
 
 	}
+
 
 }

@@ -38,7 +38,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
   private static final org.apache.thrift.protocol.TField UPTIME_SECS_FIELD_DESC = new org.apache.thrift.protocol.TField("uptime_secs", org.apache.thrift.protocol.TType.I32, (short)2);
   private static final org.apache.thrift.protocol.TField NUM_WORKERS_FIELD_DESC = new org.apache.thrift.protocol.TField("num_workers", org.apache.thrift.protocol.TType.I32, (short)3);
   private static final org.apache.thrift.protocol.TField NUM_USED_WORKERS_FIELD_DESC = new org.apache.thrift.protocol.TField("num_used_workers", org.apache.thrift.protocol.TType.I32, (short)4);
-  private static final org.apache.thrift.protocol.TField SUPERVISOR_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("supervisor_id", org.apache.thrift.protocol.TType.STRING, (short)5);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -50,15 +49,13 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
   private int uptime_secs; // required
   private int num_workers; // required
   private int num_used_workers; // required
-  private String supervisor_id; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     HOST((short)1, "host"),
     UPTIME_SECS((short)2, "uptime_secs"),
     NUM_WORKERS((short)3, "num_workers"),
-    NUM_USED_WORKERS((short)4, "num_used_workers"),
-    SUPERVISOR_ID((short)5, "supervisor_id");
+    NUM_USED_WORKERS((short)4, "num_used_workers");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -81,8 +78,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
           return NUM_WORKERS;
         case 4: // NUM_USED_WORKERS
           return NUM_USED_WORKERS;
-        case 5: // SUPERVISOR_ID
-          return SUPERVISOR_ID;
         default:
           return null;
       }
@@ -138,8 +133,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     tmpMap.put(_Fields.NUM_USED_WORKERS, new org.apache.thrift.meta_data.FieldMetaData("num_used_workers", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
-    tmpMap.put(_Fields.SUPERVISOR_ID, new org.apache.thrift.meta_data.FieldMetaData("supervisor_id", org.apache.thrift.TFieldRequirementType.REQUIRED, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(SupervisorSummary.class, metaDataMap);
   }
@@ -151,8 +144,7 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
     String host,
     int uptime_secs,
     int num_workers,
-    int num_used_workers,
-    String supervisor_id)
+    int num_used_workers)
   {
     this();
     this.host = host;
@@ -162,7 +154,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
     set_num_workers_isSet(true);
     this.num_used_workers = num_used_workers;
     set_num_used_workers_isSet(true);
-    this.supervisor_id = supervisor_id;
   }
 
   /**
@@ -176,9 +167,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
     this.uptime_secs = other.uptime_secs;
     this.num_workers = other.num_workers;
     this.num_used_workers = other.num_used_workers;
-    if (other.is_set_supervisor_id()) {
-      this.supervisor_id = other.supervisor_id;
-    }
   }
 
   public SupervisorSummary deepCopy() {
@@ -194,7 +182,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
     this.num_workers = 0;
     set_num_used_workers_isSet(false);
     this.num_used_workers = 0;
-    this.supervisor_id = null;
   }
 
   public String get_host() {
@@ -286,29 +273,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __NUM_USED_WORKERS_ISSET_ID, value);
   }
 
-  public String get_supervisor_id() {
-    return this.supervisor_id;
-  }
-
-  public void set_supervisor_id(String supervisor_id) {
-    this.supervisor_id = supervisor_id;
-  }
-
-  public void unset_supervisor_id() {
-    this.supervisor_id = null;
-  }
-
-  /** Returns true if field supervisor_id is set (has been assigned a value) and false otherwise */
-  public boolean is_set_supervisor_id() {
-    return this.supervisor_id != null;
-  }
-
-  public void set_supervisor_id_isSet(boolean value) {
-    if (!value) {
-      this.supervisor_id = null;
-    }
-  }
-
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case HOST:
@@ -343,14 +307,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
       }
       break;
 
-    case SUPERVISOR_ID:
-      if (value == null) {
-        unset_supervisor_id();
-      } else {
-        set_supervisor_id((String)value);
-      }
-      break;
-
     }
   }
 
@@ -367,9 +323,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
 
     case NUM_USED_WORKERS:
       return Integer.valueOf(get_num_used_workers());
-
-    case SUPERVISOR_ID:
-      return get_supervisor_id();
 
     }
     throw new IllegalStateException();
@@ -390,8 +343,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
       return is_set_num_workers();
     case NUM_USED_WORKERS:
       return is_set_num_used_workers();
-    case SUPERVISOR_ID:
-      return is_set_supervisor_id();
     }
     throw new IllegalStateException();
   }
@@ -445,15 +396,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
         return false;
     }
 
-    boolean this_present_supervisor_id = true && this.is_set_supervisor_id();
-    boolean that_present_supervisor_id = true && that.is_set_supervisor_id();
-    if (this_present_supervisor_id || that_present_supervisor_id) {
-      if (!(this_present_supervisor_id && that_present_supervisor_id))
-        return false;
-      if (!this.supervisor_id.equals(that.supervisor_id))
-        return false;
-    }
-
     return true;
   }
 
@@ -480,11 +422,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
     builder.append(present_num_used_workers);
     if (present_num_used_workers)
       builder.append(num_used_workers);
-
-    boolean present_supervisor_id = true && (is_set_supervisor_id());
-    builder.append(present_supervisor_id);
-    if (present_supervisor_id)
-      builder.append(supervisor_id);
 
     return builder.toHashCode();
   }
@@ -537,16 +474,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(is_set_supervisor_id()).compareTo(typedOther.is_set_supervisor_id());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (is_set_supervisor_id()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.supervisor_id, typedOther.supervisor_id);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     return 0;
   }
 
@@ -586,14 +513,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
     sb.append("num_used_workers:");
     sb.append(this.num_used_workers);
     first = false;
-    if (!first) sb.append(", ");
-    sb.append("supervisor_id:");
-    if (this.supervisor_id == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.supervisor_id);
-    }
-    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -614,10 +533,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
 
     if (!is_set_num_used_workers()) {
       throw new org.apache.thrift.protocol.TProtocolException("Required field 'num_used_workers' is unset! Struct:" + toString());
-    }
-
-    if (!is_set_supervisor_id()) {
-      throw new org.apache.thrift.protocol.TProtocolException("Required field 'supervisor_id' is unset! Struct:" + toString());
     }
 
     // check for sub-struct validity
@@ -691,14 +606,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 5: // SUPERVISOR_ID
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.supervisor_id = iprot.readString();
-              struct.set_supervisor_id_isSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -726,11 +633,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
       oprot.writeFieldBegin(NUM_USED_WORKERS_FIELD_DESC);
       oprot.writeI32(struct.num_used_workers);
       oprot.writeFieldEnd();
-      if (struct.supervisor_id != null) {
-        oprot.writeFieldBegin(SUPERVISOR_ID_FIELD_DESC);
-        oprot.writeString(struct.supervisor_id);
-        oprot.writeFieldEnd();
-      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -752,7 +654,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
       oprot.writeI32(struct.uptime_secs);
       oprot.writeI32(struct.num_workers);
       oprot.writeI32(struct.num_used_workers);
-      oprot.writeString(struct.supervisor_id);
     }
 
     @Override
@@ -766,8 +667,6 @@ public class SupervisorSummary implements org.apache.thrift.TBase<SupervisorSumm
       struct.set_num_workers_isSet(true);
       struct.num_used_workers = iprot.readI32();
       struct.set_num_used_workers_isSet(true);
-      struct.supervisor_id = iprot.readString();
-      struct.set_supervisor_id_isSet(true);
     }
   }
 

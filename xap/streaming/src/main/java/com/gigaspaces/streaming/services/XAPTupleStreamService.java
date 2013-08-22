@@ -1,6 +1,7 @@
 package com.gigaspaces.streaming.services;
 
 import java.util.List;
+import java.util.Set;
 
 import com.gigaspaces.streaming.client.XAPTupleStream;
 
@@ -39,5 +40,5 @@ public interface XAPTupleStreamService {
 	 * 
 	 * @return a list of stream names
 	 */
-	List<String> listStreams();
+	Set<String> listStreams();
 }

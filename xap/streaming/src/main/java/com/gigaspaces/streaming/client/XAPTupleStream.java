@@ -1,10 +1,9 @@
 package com.gigaspaces.streaming.client;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
-import org.apache.log4j.Logger;
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.GigaSpaceConfigurer;
 import org.openspaces.core.space.UrlSpaceConfigurer;
@@ -29,7 +28,7 @@ import com.j_spaces.core.client.TakeModifiers;
 
 public class XAPTupleStream implements XAPStream<XAPTuple>{
 	private static final long serialVersionUID = 1L;
-	private static final Logger log=Logger.getLogger(XAPTupleStream.class);
+	private static final Logger log=Logger.getLogger(XAPTupleStream.class.getName());
 	private transient GigaSpace space;
 	private String spaceUrl;
 	private String tupleTypeName;
@@ -38,14 +37,19 @@ public class XAPTupleStream implements XAPStream<XAPTuple>{
 	private transient XAPStreamConfig streamConfig;
 
 	public XAPTupleStream(){}
-
-	public XAPTupleStream(String spaceUrl,String name){
-		if(spaceUrl==null)throw new IllegalArgumentException("null space url supplied");
+	
+	public XAPTupleStream(String name){
 		if(name==null || name.length()==0)throw new IllegalArgumentException("null or 0 length name supplied");
 		if(name.contains("_"))throw new IllegalArgumentException("names can't have underscores");
-		this.spaceUrl=spaceUrl;
+		
 		this.name=name;
 		this.tupleTypeName=name+"_0_tuple";
+	}
+
+	public XAPTupleStream(String spaceUrl,String name){
+		this(name);
+		if(spaceUrl==null)throw new IllegalArgumentException("null space url supplied");
+		this.spaceUrl=spaceUrl;
 	}
 
 	/**
@@ -113,11 +117,10 @@ public class XAPTupleStream implements XAPStream<XAPTuple>{
 		XAPTuple template=new XAPTuple();
 		template.setTypeName(info.entryTypeName);
 		XAPTuple[] tuples=getSpace().takeMultiple(template,info.qty,TakeModifiers.FIFO);
-		if(tuples!=null){
-			if(tuples.length!=info.qty)throw new RuntimeException(String.format("unable to clear batch: wanted %d, got %d entries ",info.qty,tuples.length));
-			return;
+		if(tuples==null){
+			throw new RuntimeException("batch clear failed: null returned from take");
 		}
-		throw new RuntimeException("batch clear failed: null returned from take");
+		return;
 	}
 
 	@Override
@@ -151,7 +154,7 @@ public class XAPTupleStream implements XAPStream<XAPTuple>{
 	public GigaSpace getSpace() {
 		// do lazy connect here
 		if(space==null){
-			log.debug("connecting to: "+spaceUrl);
+			log.fine("connecting to: "+spaceUrl);
 			space=new GigaSpaceConfigurer(new UrlSpaceConfigurer(spaceUrl).space()).gigaSpace();
 		}
 		return space;
@@ -170,14 +173,7 @@ public class XAPTupleStream implements XAPStream<XAPTuple>{
 	}
 
 	public List<String> getFieldNames(){
-		List<String> list=new ArrayList<String>();
-
-		GigaSpace space=getSpace();
-		XAPStreamConfig template=new XAPStreamConfig();
-		template.setName(name);
-		template=space.read(template);
-		if(template==null)throw new RuntimeException("stream config not found for :"+name);
-		return template.getFields();
+		return getStreamConfig().getFields();
 	}
 
 	public static void main(String[] args)throws Exception{

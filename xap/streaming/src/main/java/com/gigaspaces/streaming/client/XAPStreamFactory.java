@@ -1,8 +1,10 @@
 package com.gigaspaces.streaming.client;
 
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openspaces.core.GigaSpace;
 import org.openspaces.core.GigaSpaceConfigurer;
@@ -21,6 +23,7 @@ import com.gigaspaces.streaming.services.XAPTupleStreamService;
  *
  */
 public class XAPStreamFactory {
+	private static final Logger log=Logger.getLogger(XAPStreamFactory.class.getName());
 	private GigaSpace space;
 	private XAPTupleStreamService svc;
 	private String spaceUrl;
@@ -52,12 +55,19 @@ public class XAPStreamFactory {
 	 * @return
 	 */
 	public Set<String> listStreams(){
-		Set<String> list=new HashSet<String>();
-		
-		XAPStreamConfig template=new XAPStreamConfig();
-		XAPStreamConfig[] cfgs=space.readMultiple(template);
-		for(XAPStreamConfig cfg:cfgs)list.add(cfg.getName());
-		return list;
+		Set<String> streams=svc.listStreams();
+		if(streams==null){
+			log.severe("listStreams returned null");
+			return null;
+		}
+		if(log.isLoggable(Level.FINE)){
+			log.fine("listStreams called. Found streams:");
+			int i=0;
+			for(Iterator<String> it=streams.iterator();it.hasNext();){
+				log.fine(String.format("  %3d - %s",i++,it.next()));
+			}
+		}
+		return svc.listStreams();
 	}
 
 	/**
@@ -69,9 +79,14 @@ public class XAPStreamFactory {
 	 * @return
 	 */
 	public XAPTupleStream getTupleStream(String streamName)throws Exception{
-		XAPStreamConfig cfg=space.readById(XAPStreamConfig.class,streamName);
-		if(cfg==null)return null;
-		return new XAPTupleStream(spaceUrl,streamName);
+		XAPTupleStream stream=svc.openStream(streamName);
+		if(stream==null){
+			log.warning(String.format("stream '%s' not found",streamName));
+			return null;
+		}
+		log.info("opened stream "+streamName);
+		stream.setSpace(space);
+		return stream;
 	}
 
 	/**
@@ -89,6 +104,8 @@ public class XAPStreamFactory {
 		space.clear(template); //clear tuples
 		
 	}
-	
+
+	public static void main(String[] args){
+	}
 	
 }

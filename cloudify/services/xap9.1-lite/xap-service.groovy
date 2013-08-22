@@ -34,10 +34,8 @@ service {
 
 		init "xap_install.groovy"
 		start "xap_start.groovy"
-		stop "xap_stop.groovy"
 
-/* good for cloudify 2.3 */
-/*		details {
+		details {
 			def currPublicIP
 			
 			if (  context.isLocalCloud()  ) {
@@ -47,20 +45,19 @@ service {
 				currPublicIP =context.getPublicAddress()
 			}
 	
-			def ctxPath=("default" == context.applicationName)?"":"${context.applicationName}"			
-			def applicationURL = "http://${currPublicIP}:${currHttpPort}/${ctxPath}"
+			def applicationURL = "http://${currPublicIP}:${uiPort}"
 		
 				return [
-					"Application URL":"<a href=\"${applicationURL}\" target=\"_blank\">${applicationURL}</a>"
+					"Management UI":"<a href=\"${applicationURL}\" target=\"_blank\">${applicationURL}</a>"
 				]
-		}	*/
+		}
 	}
 	plugins([
 		plugin {
 			name "portLiveness"
 			className "org.cloudifysource.usm.liveness.PortLivenessDetector"
 			config ([
-						"Port" : [8999],
+						"Port" : [uiPort],
 						"TimeoutInSeconds" : 60,
 						"Host" : "127.0.0.1"
 					])

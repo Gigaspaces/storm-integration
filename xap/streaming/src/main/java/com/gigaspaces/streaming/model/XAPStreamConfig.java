@@ -5,6 +5,7 @@ import java.util.List;
 import com.gigaspaces.annotation.pojo.SpaceClass;
 import com.gigaspaces.annotation.pojo.SpaceId;
 import com.gigaspaces.annotation.pojo.SpaceRouting;
+import com.gigaspaces.streaming.util.FixedNumberQueue;
 
 /**
  * Simple space class that holds stream metadata.  Instances of this class
@@ -19,6 +20,7 @@ public class XAPStreamConfig{
 	private String name;
 	private Integer routingValue;
 	private List<String> fields;
+	private FixedNumberQueue<Integer> backlog=new FixedNumberQueue<Integer>(10);
 
 	@SpaceId
 	public String getName() {
@@ -44,5 +46,11 @@ public class XAPStreamConfig{
 	}
 	public List<String> getFields() {
 		return fields;
+	}
+	public FixedNumberQueue<Integer> getBacklog() {
+		return backlog;
+	}
+	public void setBacklog(FixedNumberQueue<Integer> backlog) {
+		this.backlog = backlog;
 	}
 }

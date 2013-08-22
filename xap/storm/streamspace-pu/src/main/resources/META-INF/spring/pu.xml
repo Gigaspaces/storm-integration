@@ -13,6 +13,7 @@
 		">
 
 	<context:component-scan base-package="com.gigaspaces.streaming.services" />
+	<context:annotation-config/>
 	<os-remoting:annotation-support/>
 	<os-core:giga-space-context/>
 

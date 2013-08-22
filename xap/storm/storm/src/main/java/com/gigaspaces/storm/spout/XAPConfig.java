@@ -11,14 +11,15 @@ import java.io.Serializable;
 public class XAPConfig implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private int batchSize;
-	private String url;
+	private String xapHost;
 	private String streamName;
+	private String[] fields;
 	
 	public XAPConfig(){}
 	
-	public XAPConfig(String url, String streamName, int batchSize){
+	public XAPConfig(String xapHost, String streamName, int batchSize){
 		this.batchSize=batchSize;
-		this.url=url;
+		this.xapHost=xapHost;
 		this.streamName=streamName;
 	}
 	public int getBatchSize() {
@@ -35,12 +36,19 @@ public class XAPConfig implements Serializable{
 		return streamName;
 	}
 
-	public void setUrl(String url) {
-		this.url = url;
+	public void setXapHost(String xapHost) {
+		this.xapHost = xapHost;
 	}
 
-	public String getUrl() {
-		return url;
+	public String getXapHost() {
+		return xapHost;
+	}
+
+	public void setFields(String... fields) {
+		this.fields=fields;
+	}
+	public String[] getFields(){
+		return fields;
 	}
 	
 }

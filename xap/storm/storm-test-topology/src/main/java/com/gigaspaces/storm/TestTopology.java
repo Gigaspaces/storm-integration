@@ -31,8 +31,6 @@ public class TestTopology {
 		
 		XAPConfig config=new XAPConfig();
 		config.setBatchSize(10);
-		config.setHost(xaphost);
-		config.setSpaceName("streamspace");
 		config.setStreamName(streamName);
 		
 		builder.setSpout("xapspout",streamName,"id",new XAPTridentSpout(config),1,"group");
@@ -102,12 +100,16 @@ public class TestTopology {
 
 		@Override
 		public void prepare(Map conf, TopologyContext context,
-				BatchOutputCollector collector) {
+				BatchOutputCollector collector){
 			
 			this.config=conf;
 			this.context=context;
 			this.collector=collector;
-			stream=new XAPStreamFactory(host,space).openTupleStream(streamName);
+			try {
+				stream=new XAPStreamFactory(String.format("jini://*/*/%s?locators=%s",space,host)).getTupleStream(streamName);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			System.out.println("PrintBolt:prepare called: stream="+stream.toString());
 		}
 
@@ -126,7 +128,7 @@ public class TestTopology {
 		@Override
 		public void finishBatch(BatchInfo batchInfo) {
 			System.out.println("PrintBolt:in finishbatch");
-			stream.clearBatch(new XAPStreamBatch.BatchInfo(batchCnt));
+			stream.clearBatch(new XAPStreamBatch.BatchInfo(stream.getTupleTypeName(),batchCnt));
 		}
 
 		@Override
@@ -151,7 +153,6 @@ public class TestTopology {
 		public void cleanup() {
 			System.out.println("PrintBolt:in cleanup");
 		}
-
 		
 	}
 
