@@ -6,6 +6,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.openspaces.core.GigaSpace;
+import org.openspaces.core.GigaSpaceConfigurer;
+import org.openspaces.core.space.UrlSpaceConfigurer;
+
+import com.gigaspaces.annotation.pojo.SpaceClass;
+import com.gigaspaces.annotation.pojo.SpaceId;
+import com.gigaspaces.annotation.pojo.SpaceRouting;
+import com.gigaspaces.client.ChangeSet;
+import com.gigaspaces.query.IdQuery;
+
 /**
  * Simple queue implementation with a fixed size that throws away the
  * oldest members on overflow.  Intended for use via the change api for
@@ -173,4 +183,62 @@ public class FixedNumberQueue<T extends Number> extends LinkedList<T>{
 		}
 		return min; 
 	}
+	
+	@SpaceClass
+	public static class Test{
+		private Integer id=null;
+		private FixedNumberQueue<Integer> q=new FixedNumberQueue<Integer>(3);
+		
+		public Test(){}
+
+		public Test(int i) {
+			this.id=i;
+		}
+
+		public FixedNumberQueue getQ() {
+			return q;
+		}
+
+		public void setQ(FixedNumberQueue q) {
+			this.q = q;
+		}
+
+		@SpaceId(autoGenerate=false)
+		@SpaceRouting
+		public Integer getId() {
+			return id;
+		}
+
+		public void setId(Integer id) {
+			this.id = id;
+		}
+	}
+	
+	public static void main(String[] args){
+		UrlSpaceConfigurer usc=new UrlSpaceConfigurer("/./space");
+		try{
+		GigaSpace space=new GigaSpaceConfigurer(usc.space()).gigaSpace();
+		space.write(new Test(0));
+		
+		ChangeSet cs=new ChangeSet();
+		cs.addToCollection("q", 1);
+		cs.addToCollection("q", 2);
+		cs.addToCollection("q", 3);
+		cs.addToCollection("q", 4);
+		space.change(new IdQuery<Test>(Test.class,0),cs);
+		Test after=space.readById(Test.class,0);
+		
+		System.out.println(after.getQ());
+		}
+		finally{
+			try {
+				usc.destroy();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+	}
 }
+
