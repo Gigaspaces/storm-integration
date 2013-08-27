@@ -66,6 +66,12 @@ new AntBuilder().sequential {
 	chmod(dir:"${config.installDir}/${config.name}/bin", perm:'ugo+rx', includes:"*.sh")
 	chmod(dir:"commands", perm:'ugo+rx', includes:"*.sh")
 	delete(file:"${config.installDir}/${config.name}/conf/storm.yaml")
+
+
+	//add host entry
+	exec(executable:"commands/addhost.sh", osfamily:"unix") {
+		arg(line:"${context.privateAddress} ${InetAddress.localHost.hostName}")
+	}
 }
 
 new File("${config.installDir}/${config.name}/conf/storm.yaml").withWriter{ out->

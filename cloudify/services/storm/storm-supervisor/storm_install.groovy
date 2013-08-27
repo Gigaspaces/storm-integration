@@ -95,9 +95,32 @@ new AntBuilder().sequential {
 	chmod(file:"${config.installDir}/${config.name}/bin/storm", perm:'ugo+rx')
 	chmod(dir:"${config.installDir}/${config.name}/bin", perm:'ugo+rx', includes:"*.sh")
 	delete(file:"${config.installDir}/${config.name}/conf/storm.yaml")
+	chmod(dir:"${context.serviceDirectory}/commands", perm:'ugo+rx', includes:"*.sh")
+
 }
 
 new File("${config.installDir}/${config.name}/conf/storm.yaml").withWriter{ out->
   out.write(template.toString())
 }
 
+//------------------------------------
+//add host to other instances & nimbus
+
+
+service = null
+
+while (service == null)
+{
+   println "Locating nimbus service...";
+   service = context.waitForService("storm-nimbus", 120, TimeUnit.SECONDS)
+}
+def instances = null;
+while(instances==null)
+{
+   instances = service.waitForInstances(service.getNumberOfPlannedInstances(), 120, TimeUnit.SECONDS )
+}
+
+//only 1 instance of nimbus
+instances[0].invoke("addhostentry","${context.privateAddress}" as String,"${InetAddress.localHost.hostName}" as String)
+
+return true

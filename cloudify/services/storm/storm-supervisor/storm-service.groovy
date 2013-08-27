@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-
+import util
 
 service {
 
@@ -21,7 +21,7 @@ service {
 	type "APP_SERVER"
 	icon "storm.png"
 	elastic true
-	numInstances 1 
+	numInstances 3
 	minAllowedInstances 1
 	maxAllowedInstances 100
 
@@ -31,13 +31,32 @@ service {
     }
 
 	lifecycle{
-		init "storm_install.groovy"
+		install "storm_install.groovy"
+		postInstall "storm_postinstall.groovy"
 		start "storm_start.groovy"
 		preStop "storm_stop.groovy"
 	}
 	plugins([
 	])
 
+	customCommands([
+		"addhostentry": { ip,hostname->
+			if(!util.lockFile("/etc/hosts"))return false;
+			try{
+			println "running addhost.sh with args ${ip} ${hostname}";
+			"chmod ugo+rwx ${context.serviceDirectory}/commands/addhost.sh".execute()
+			"${context.serviceDirectory}/commands/addhost.sh ${ip} ${hostname}".execute()
+			}
+			catch(Exception e){
+				e.printStackTrace()
+				return false
+			}
+			finally{ util.unlockFile("/etc/hosts");}
+			return true
+			
+		}
+	])
+			
 
 	userInterface {
 		metricGroups = ([

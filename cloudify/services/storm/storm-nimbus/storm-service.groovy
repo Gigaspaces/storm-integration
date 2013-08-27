@@ -14,6 +14,7 @@
 * limitations under the License.
 *******************************************************************************/
 import java.util.concurrent.TimeUnit;
+import util
 
 
 service {
@@ -80,6 +81,17 @@ service {
 	])
 
 	customCommands ([
+
+		"addhostentry": { ip,hostname->
+			if(! util.lockFile("/etc/hosts"))return false;
+			try{
+			"chmod ugo+rwx ${context.serviceDirectory}/commands/addhost.sh".execute()
+			println "running addhost.sh with args ${ip} ${hostname}";
+			"${context.serviceDirectory}/commands/addhost.sh ${ip} ${hostname}".execute()
+			}
+			finally{ util.unlockFile("/etc/hosts");}
+			return true
+		},
 
 		"wordcount-start": "commands/wordcount-start.sh",
 
