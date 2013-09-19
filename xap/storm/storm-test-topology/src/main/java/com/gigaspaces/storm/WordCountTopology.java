@@ -16,7 +16,7 @@ import backtype.storm.tuple.Values;
 
 import com.gigaspaces.storm.spout.XAPConfig;
 import com.gigaspaces.storm.spout.XAPTridentSpout;
-import com.gigaspaces.storm.state.XAPState;
+import com.gigaspaces.storm.state.XAPState2;
 
 public class WordCountTopology {
 	private static final Logger log=Logger.getLogger(WordCountTopology.class.getName());
@@ -38,6 +38,7 @@ public class WordCountTopology {
 		config.setStreamName(streamName);
 		config.setXapHost(xaphost);
 		config.setFields("sentence");
+		config.setCollectStats(true);
 		
         Config conf = new Config();
         //conf.setDebug(true);
@@ -47,9 +48,11 @@ public class WordCountTopology {
         TridentTopology topology = new TridentTopology();        
         TridentState wordCounts =
               topology.newStream("spout1", spout)
-                .each(new Fields("sentence"), new SplitLarge(3), new Fields("word"))
+                .each(new Fields("sentence"), new SplitLarge(6), new Fields("word"))
                 .groupBy(new Fields("word"))
-                .persistentAggregate(XAPState.nonTransactional(String.format("jini://*/*/streamspace?locators=%s",xaphost)), new Count(), new Fields("count"))
+                .persistentAggregate(XAPState2.nonTransactional(
+                		String.format("jini://*/*/streamspace?locators=%s",xaphost), true),
+                		new Count(), new Fields("count"))
                 ;
         
         if(args!=null && args.length > 0) {
@@ -87,7 +90,7 @@ class SplitLarge extends BaseFunction {
 
     @Override
     public void execute(TridentTuple tuple, TridentCollector collector) {
-        for(String word: tuple.getString(0).split("[ ;,\\?\\-\\\"\\!]+")) {
+        for(String word: tuple.getString(0).split("[ ;,:\\?\\-\\\"\\!\\.\\r()]+")) {
             if(word.length() > size) {
                 collector.emit(new Values(word.toLowerCase()));
             }
