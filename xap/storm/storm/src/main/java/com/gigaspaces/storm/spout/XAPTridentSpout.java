@@ -10,6 +10,7 @@ import java.util.Set;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.openspaces.core.GigaSpace;
+import org.openspaces.core.GigaSpaceConfigurer;
 import org.openspaces.core.space.UrlSpaceConfigurer;
 
 import storm.trident.operation.TridentCollector;
@@ -18,6 +19,11 @@ import storm.trident.topology.TransactionAttempt;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Fields;
 
+import com.gigaspaces.client.ChangeModifiers;
+import com.gigaspaces.client.ChangeSet;
+import com.gigaspaces.client.WriteModifiers;
+import com.gigaspaces.query.IdQuery;
+import com.gigaspaces.storm.perf.PerfStats;
 import com.gigaspaces.streaming.client.XAPStreamFactory;
 import com.gigaspaces.streaming.client.XAPTupleStream;
 import com.gigaspaces.streaming.model.XAPStreamBatch;
@@ -35,6 +41,8 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 	private static final long serialVersionUID = 1L;
 	private static final Logger log=Logger.getLogger(XAPTridentSpout.class);
 	XAPConfig cfg;
+	transient UrlSpaceConfigurer usc;
+	transient GigaSpace statsSpace;
 	transient XAPTupleStream stream;
 
 	public XAPTridentSpout(XAPConfig cfg){
@@ -69,10 +77,13 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 
 	private XAPTupleStream getStream(){
 		if(stream==null){
+			//Set up stats object if configured
+			setupStatsCollector();
+
 			if(log.isEnabledFor(Level.DEBUG))log.debug("spout creating stream");
 			//TODO: passing in the host alone isn't good enough.  Forces the stream space 
 			//      to be named "streamspace"
-			XAPStreamFactory fact=new XAPStreamFactory(String.format("jini://*/*/streamspace?locators=%s",cfg.getXapHost()));			
+			XAPStreamFactory fact=new XAPStreamFactory(xapUrl());
 			Set<String> streams=fact.listStreams();
 			if(streams.contains(cfg.getStreamName())){
 				try{
@@ -92,6 +103,22 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 		return stream;
 	}
 
+	private void setupStatsCollector() {
+		if(!cfg.isCollectStats())return;
+		if(usc==null){
+			usc=new UrlSpaceConfigurer(xapUrl());
+			statsSpace=new GigaSpaceConfigurer(usc.space()).gigaSpace();
+		}
+		PerfStats ps=new PerfStats(10,cfg.getBatchSize());
+		try{
+			statsSpace.write(ps,WriteModifiers.WRITE_ONLY);
+		}
+		catch(Exception e){ /*ignore*/} 
+	}
+
+	private String xapUrl(){
+		return String.format("jini://*/*/streamspace?locators=%s",cfg.getXapHost());
+	}
 
 	class Emitter implements ITridentSpout.Emitter<BatchInfo>{
 		//need to save several in case of pipelining
@@ -107,10 +134,12 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 		public void emitBatch(TransactionAttempt tx, BatchInfo coordinatorMeta,
 				TridentCollector collector) {
 			if(log.isEnabledFor(Level.DEBUG))log.debug("emit batch called, tx="+tx.getTransactionId());
-			long now=System.currentTimeMillis();
-			XAPStreamBatch<XAPTuple> batch=getStream().readBatch(cfg.getBatchSize());		
+			long now=0;
+			if(cfg.isCollectStats())now=System.currentTimeMillis();
+			XAPStreamBatch<XAPTuple> batch=getStream().readBatch(cfg.getBatchSize());
 			if(log.isEnabledFor(Level.DEBUG))log.debug("read batch cnt="+batch.getInfo().qty);
 			if(batch.getInfo().qty>0){
+				if(cfg.isCollectStats())updateStats(System.currentTimeMillis()-now);
 				for(int i=0;i<batch.getEntries().size();i++){
 					List<Object> list=new ArrayList<Object>();
 					for(String fname:getStream().getFieldNames()){
@@ -128,6 +157,12 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 				}
 			}
 			if(log.isEnabledFor(Level.DEBUG))log.debug(String.format("emit batch called, tx id=%d qty=%d",tx.getTransactionId(),batch.getInfo().qty));
+		}
+
+		private void updateStats(long l) {
+			ChangeSet cs=new ChangeSet();
+			cs.addToCollection("readLatency", (int)l);
+			statsSpace.change(new IdQuery<PerfStats>(PerfStats.class,0), cs, ChangeModifiers.ONE_WAY);
 		}
 
 		@Override
@@ -180,6 +215,7 @@ public class XAPTridentSpout implements ITridentSpout<BatchInfo> {
 			if(log.isEnabledFor(Level.DEBUG))log.debug("coord.close called");
 			//noop
 		}
+		
 
 	}
 

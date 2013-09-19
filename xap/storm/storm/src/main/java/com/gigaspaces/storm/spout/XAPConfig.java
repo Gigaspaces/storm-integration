@@ -14,6 +14,7 @@ public class XAPConfig implements Serializable{
 	private String xapHost;
 	private String streamName;
 	private String[] fields;
+	private boolean collectStats=false;
 	
 	public XAPConfig(){}
 	
@@ -51,4 +52,12 @@ public class XAPConfig implements Serializable{
 		return fields;
 	}
 	
+	public boolean isCollectStats() {
+		return collectStats;
+	}
+
+	public void setCollectStats(boolean collectStats) {
+		this.collectStats = collectStats;
+	}
+
 }
