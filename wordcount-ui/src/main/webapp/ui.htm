@@ -1,0 +1,262 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+  	<head>
+    	<meta http-equiv="content-type" content="text/html;charset=utf-8">
+		<meta http-equiv="Access-Control-Allow-Origin" content="*"> 
+    	<title>d3.js gauges</title>
+		
+		<style>
+		
+			body
+			{
+			  	font: 10px arial;
+			}
+			input
+			{
+				font: 10px arial;
+			}
+			
+		</style>
+		
+		<!--  BAR CHART STYLE -->
+		<style>  
+		#barchartContainer .bar rect {
+  fill: steelblue;
+}
+
+#barchartContainer .bar text.value {
+  fill: white;
+}
+
+#barchartContainer .axis {
+  shape-rendering: crispEdges;
+}
+
+#barchartContainer .axis path {
+  fill: none;
+}
+
+#barchartContainer .x.axis line {
+  stroke: #fff;
+  stroke-opacity: .8;
+}
+
+#barchartContainer .y.axis path {
+  stroke: black;
+}
+
+    </style>
+    
+		
+		<script type="text/javascript" src="toplist.js"></script>
+		
+		<script>
+			var toplist=new TopList(10,function(obj1,obj2){
+				if(obj1[1]>obj2[1]){
+					return -1;
+				}
+				if(obj1[1]<obj2[1]){
+					return 1;
+				}
+				return 0;
+			});			
+			var ww=[]; //top 10 in array form
+			var backlog=0;
+			var batchSize=0;
+			var parser=document.createElement('a');
+			parser.href=document.URL;
+			var host=parser.hostname;
+			var xhr1=new XMLHttpRequest();
+			var xhr2=new XMLHttpRequest();
+			var xhr3=new XMLHttpRequest();
+			
+			//Get chunked JSON
+			function getChunked(xhr,url,handler){
+				xhr.open("GET",url, true);
+				xhr.onerror=function(err){ console.log("REQUEST ERROR");}
+				xhr.onload=function(){
+					handler(xhr.responseText);
+				}
+				xhr.send(null);
+			}
+
+		function refresh(){
+
+			toplist.clear();
+
+			ww.length=0;
+
+			if(xhr1.readyState==0 || xhr1.readyState==4){
+			//GET WORD COUNTS
+				getChunked(xhr1,"http://"+host+":8080/RESTData/rest/pojo/readById?classname=com.gigaspaces.storm.state.XAPState2$XAPStateMap&id=0&idClass=java.lang.Integer&routing=0&routingClass=java.lang.Integer",
+					function(text){
+				var json=JSON.parse(text);
+				for(var kk in json[0]["items"]){
+		   			toplist.add([kk,json[0]["items"][kk]]);
+				}
+				
+				var node=toplist.root;
+				while(node!=null){
+					ww.push({text:node.data[0],count:node.data[1]});
+					node=node.next;
+				}
+				updateCloud();
+			});
+			}
+			
+			//GET PERF METRICS
+			//Backlog
+			
+			if(xhr2.readyState==0 || xhr2.readyState==4){
+				getChunked(xhr2,"http://"+host+":8080/RESTData/rest/data/wordstream_0_tuple/count",function(text){
+				var json=JSON.parse(text);
+				backlog=json["count"];	
+				gauges["backlog"].redraw(backlog);
+			});
+			}
+			
+			
+			if(xhr3.readyState==0 || xhr3.readyState==4){
+				getChunked(xhr3,"http://"+host+":8080/RESTData/rest/pojo/readById?classname=com.gigaspaces.storm.perf.PerfStats&id=0&idClass=java.lang.Integer&routing=0&routingClass=java.lang.Integer",function(text){
+				var json=JSON.parse(text);
+				
+				var readlat=0;
+				json[0]["readLatency"].forEach(function(lat){
+					readlat+=lat;
+				});
+				readlat/=json[0]["readLatency"].length;
+				gauges["streamlat"].redraw(~~readlat);
+				
+				var writelat=0;
+				json[0]["writeLatency"].forEach(function(lat){
+					writelat+=lat;
+				});
+				writelat/=json[0]["writeLatency"].length;
+				gauges["statelat"].redraw(~~writelat);
+				
+				//grab batch size while were at it
+				batchSize=json[0]["readBatchSize"];
+			});
+			}
+		}
+			
+		</script>
+		
+		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+		<script type="text/javascript" src="gauge.js"></script>
+		<script type="text/javascript" src="barchart.js"></script>
+		<script type="text/javascript" src="cloud.js"></script>
+
+		<!-- word cloud -->
+		<script>
+
+		// create
+		function wordCloud(id){
+			var cnt=1;
+			var fill = d3.scale.category20();
+ 			var cloud=d3.layout.cloud().size([256, 256])
+     				.words(ww)
+     				.padding(5)
+     				.rotate(function() { return ~~(Math.random() * 2) * 90; })
+     				.font("Impact")
+     				.fontSize(function(d) { 
+					var size=~~(50*d.count/ww[0].count);
+					if(size<10)size=10;
+					return size; 
+				})
+     				.on("end", drawCloud)
+     				.start();
+
+ 			function drawCloud(words) {
+ 				d3.select("#"+id).append("svg")
+ 	     			.attr("viewbox","500 500 1000 1000")
+ 	      			.attr("width", 256)
+ 	      			.attr("height", 256)
+ 	    				.append("g")
+ 	        		.attr("transform", "translate(140,140)")
+ 	     				.selectAll("text")
+ 	       			.data(words)
+ 	     				.enter().append("text")
+ 	       			.style("font-size", function(d) { return d.size + "px"; })
+ 	       			.style("font-family", "Impact")
+ 	        		.style("fill", function(d, i) { return fill(i); })
+ 	   	    		.attr("text-anchor", "middle")
+ 	       			.attr("transform", function(d) {
+ 	          			return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+ 	     			})
+ 	       			.text(function(d) { return d.text; });
+ 			}
+ 		}
+		function updateCloud(){
+    		d3.select("#wordcloudContainer").select("svg").remove();
+			wordCloud("wordcloudContainer");
+		}
+		
+	</script>
+	<!--
+		gauges
+	-->
+		<script>
+						
+				
+			var gauges = [];
+			
+			function createGauge(name, label, min, max)
+			{
+				var config = 
+				{
+					size: 120,
+					label: label,
+					min: undefined != min ? min : 0,
+					max: undefined != max ? max : 100,
+					minorTicks: 5
+				}
+				
+				var range = config.max - config.min;
+				config.yellowZones = [{ from: config.min + range*0.75, to: config.min + range*0.9 }];
+				config.redZones = [{ from: config.min + range*0.9, to: config.max }];
+				
+				gauges[name] = new Gauge(name + "GaugeContainer", config);
+				gauges[name].render();
+			}
+			
+			function createGauges()
+			{
+				createGauge("backlog", "Backlog",0,10000);
+				createGauge("streamlat", "Stream Latency",0,1000);
+				createGauge("statelat", "State Latency",0,10000);
+			}
+			
+	</script>
+	
+	<script>
+
+		// Each group of widgets has it's own update 
+		function initialize()
+		{
+			barChart("barchartContainer");
+			wordCloud("wordcloudContainer");
+			createGauges();
+			setInterval(refresh,2000);
+		}
+	
+	</script>
+		
+		
+	</head>
+	
+	<body onload="initialize()">
+		<table>
+			<tr><td>
+			<span id="barchartContainer"></span>
+			<span id="wordcloudContainer"></span>
+			</td></tr>
+			<tr><td style="padding-left:220px">
+			<span id="backlogGaugeContainer"></span>
+			<span id="streamlatGaugeContainer"></span>
+			<span id="statelatGaugeContainer"></span>
+			</td></tr>
+		</table>
+	</body>
+	
+</html>
