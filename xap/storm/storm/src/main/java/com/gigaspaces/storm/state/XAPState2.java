@@ -28,6 +28,8 @@ import com.gigaspaces.query.IdQuery;
 import com.gigaspaces.storm.perf.PerfStats;
 
 /**
+ * This is a change API example state provider.  It is NOT general purpose, and
+ * only does simple accumulations
  * 
  * @author DeWayne
  *
@@ -36,6 +38,7 @@ import com.gigaspaces.storm.perf.PerfStats;
 public class XAPState2 implements IBackingMap<Long> {
 	private static final Logger log=Logger.getLogger(XAPState2.class);
 	private UrlSpaceConfigurer spaceCfg=null;
+	ThreadLocal<Long> start=new ThreadLocal<Long>();
 	private GigaSpace space=null;
 	SnapshottableMap<Long> _delegate;
 	private boolean collectStats;	
@@ -76,6 +79,7 @@ public class XAPState2 implements IBackingMap<Long> {
 	@Override
 	public List multiGet(List<List<Object>> keys) {
 		//No need to read values since change api will be updating it
+		if(collectStats)start.set(System.currentTimeMillis());
 		final List<Long> items=new ArrayList<Long>(keys.size());
 		for(List<Object> key:keys){
 			items.add(0L);
@@ -91,10 +95,8 @@ public class XAPState2 implements IBackingMap<Long> {
 			Serializable singleKey=toSingleKey(keys.get(i));
 			cs.increment("items."+singleKey, vals.get(i));
 		}
-		long now=0;
-		if(collectStats)now=System.currentTimeMillis();
 		space.change(new IdQuery<XAPStateMap>(XAPStateMap.class,0,0), cs, ChangeModifiers.ONE_WAY);
-		if(collectStats)updateStats(System.currentTimeMillis()-now);
+		if(collectStats)updateStats(System.currentTimeMillis()-start.get());
 	}
 	
 	// Note: relies on spout to create PerfStats object
