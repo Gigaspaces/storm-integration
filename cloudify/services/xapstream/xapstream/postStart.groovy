@@ -58,4 +58,18 @@ ac.setName("RESTData")
 ac.addProcessingUnit(pu)
 mgr.deploy(ac)
 
+//DEPLOY WORDCOUNT UI
+
+new AntBuilder().sequential {	
+	get(src:"${config.wcuiUrl}", dest:"lib", skipexisting:true)
+}
+
+pu=new ProcessingUnitConfig()
+pu.setProcessingUnit("lib/${config.wcuiName}")
+
+ac=new ApplicationConfig()
+ac.setName("wordcount-ui")
+ac.addProcessingUnit(pu)
+mgr.deploy(ac)
+
 admin.close()
