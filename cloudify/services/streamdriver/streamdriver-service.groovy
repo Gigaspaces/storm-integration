@@ -34,11 +34,12 @@ service {
 
 	customCommands ([
 
-"test": { streamname, numsecs, rate ->
-		xapinstance=util.getServiceInstances(context,"xapstream",1)[0]
-		util.invokeLocal(context,"_test", [ locator:xapinstance.getHostAddress(),streamname:streamname,space:"streamspace",numsecs:numsecs, rate:rate])
-		return true
-	},
+		"wordcount-demo": { streamname, numsecs, rate ->
+			xapinstance=util.getServiceInstances(context,"xapstream",1)[0]
+			util.invokeLocal(context,"_wordcount-demo", [ locator:xapinstance.getHostAddress(),streamname:streamname,space:"streamspace",numsecs:numsecs, rate:rate])
+			return true
+		},
+
 		"help":{
 			"""
 
@@ -106,7 +107,7 @@ write-random count stream-name
 
 		"_write-random": "commands/write-random.groovy",
 		"_write-sentences": "commands/write-sentences.groovy",
-		"_test":"commands/launch-demo.groovy"
+		"_wordcount-demo":"commands/launch-demo.groovy"
 
 	])
 }
