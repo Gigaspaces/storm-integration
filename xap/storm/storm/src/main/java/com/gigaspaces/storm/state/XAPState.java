@@ -22,7 +22,8 @@ import com.gigaspaces.annotation.pojo.SpaceRouting;
 import com.gigaspaces.client.ReadByIdsResult;
 
 /**
- * A Non transaction XAP state implementation.
+ * A Non transaction XAP state implementation.  Each word gets it's own instance
+ * in the space.
  * 
  * TODO - make it support transactions
  * TODO - make it utilize the change API for updates

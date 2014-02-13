@@ -9,7 +9,7 @@
 	<version>1.0-SNAPSHOT</version>
 
 	<properties>
-		<gs-version>9.0.0</gs-version>
+		<gs-version>9.6.0-9500-RELEASE</gs-version>
 	</properties>
 
 	<dependencies>
