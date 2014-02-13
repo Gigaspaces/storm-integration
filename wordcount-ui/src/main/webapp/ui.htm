@@ -108,7 +108,7 @@
 			//Backlog
 			
 			if(xhr2.readyState==0 || xhr2.readyState==4){
-				getChunked(xhr2,"http://"+host+":8080/RESTData/rest/data/wordstream_0_tuple/count",function(text){
+				getChunked(xhr2,"http://"+host+":8080/RESTData/rest/pojo/wordstream_0_tuple/count",function(text){
 				var json=JSON.parse(text);
 				backlog=json["count"];	
 				gauges["backlog"].redraw(backlog);
