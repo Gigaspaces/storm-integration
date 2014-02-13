@@ -22,16 +22,13 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletResponse;
 
 import org.openspaces.core.GigaSpace;
-import org.openspaces.core.GigaSpaceConfigurer;
-import org.openspaces.core.space.UrlSpaceConfigurer;
-import org.springframework.beans.factory.annotation.Value;
+import org.openspaces.rest.utils.ControllerUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.j_spaces.core.IJSpace;
 import com.j_spaces.core.client.SQLQuery;
 
 /**
@@ -42,8 +39,6 @@ import com.j_spaces.core.client.SQLQuery;
 @RequestMapping(value = "/rest/pojo/*")
 public class SpacePojoReadAPIController {
 	private static final Logger log=Logger.getLogger(SpacePojoReadAPIController.class.getName());
-	private int maxReturnValues = Integer.MAX_VALUE;
-	private GigaSpace gigaSpace;
 	private static final Logger logger = Logger.getLogger(SpacePojoReadAPIController.class.getName());
 	
 	/**
@@ -52,6 +47,7 @@ public class SpacePojoReadAPIController {
 	 */
 	@RequestMapping(value = "/readMultiple", method = RequestMethod.GET)
 	public ModelAndView readMultiple(
+			@RequestParam String spaceName, @RequestParam String locators,
 	        @RequestParam String classname, @RequestParam Integer max, @RequestParam String query, HttpServletResponse response){
 	    if(logger.isLoggable(Level.FINE))
 	        logger.fine("creating read query with type: " +  classname + " and query="+query );
@@ -64,6 +60,8 @@ public class SpacePojoReadAPIController {
 		}
 		Object[] objs=null;
 		if(max==null)max=Integer.MAX_VALUE;
+		
+		GigaSpace gigaSpace=ControllerUtils.xapCache.get(spaceName,locators);
 		
 		if(query==null ||query.length()==0){
 			objs=gigaSpace.readMultiple(template,max);
@@ -90,25 +88,21 @@ public class SpacePojoReadAPIController {
 	 */
 	@RequestMapping(value = "/readById", method = RequestMethod.GET)
 	public ModelAndView readById(
+			@RequestParam String spaceName, @RequestParam String locators,
 	        @RequestParam String classname, @RequestParam String id, @RequestParam String idClass,
 	        @RequestParam String routing, @RequestParam String routingClass, HttpServletResponse response)throws Exception{
 
-		log.info(String.format("readById called params: classname=%s id=%s idClass=%s routing=%s routingClass=%s",
+		log.fine(String.format("readById called params: classname=%s id=%s idClass=%s routing=%s routingClass=%s",
 				classname,id,idClass,routing,routingClass));
 		
-		Class _valueClass=Class.forName(classname);
-	    Class _idClass=Class.forName(idClass);
-	    Class _routingClass=Class.forName(routingClass);
-	    Object template;
-		try {
-			template = Class.forName(classname).newInstance();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		Class<?> _valueClass=Class.forName(classname);
+	    Class<?> _idClass=Class.forName(idClass);
+	    Class<?> _routingClass=Class.forName(routingClass);
 
 		Object idobj=_idClass.getConstructor(String.class).newInstance(id);
 		Object routingobj=_routingClass.getConstructor(String.class).newInstance(routing);
-		log.info(String.format("reading: gigaSpace=%s _valueClass=%s idobj=%s routingobj=%s",
+		GigaSpace gigaSpace=ControllerUtils.xapCache.get(spaceName,locators);
+		log.fine(String.format("reading: gigaSpace=%s _valueClass=%s idobj=%s routingobj=%s",
 				gigaSpace,_valueClass,idobj,routingobj));
 		Object obj=gigaSpace.readById(_valueClass,idobj,routingobj);
 	    
@@ -128,6 +122,7 @@ public class SpacePojoReadAPIController {
 	 */
 	@RequestMapping(value = "/count", method = RequestMethod.GET)
 	public ModelAndView count(
+			@RequestParam String spaceName, @RequestParam String locators,
 	        @RequestParam String classname, HttpServletResponse response){
 	    if(logger.isLoggable(Level.FINE))
 	        logger.fine("creating read query with type: " +  classname );
@@ -138,7 +133,9 @@ public class SpacePojoReadAPIController {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
+
+		GigaSpace gigaSpace=ControllerUtils.xapCache.get(spaceName,locators);
+
 	    Integer cnt=gigaSpace.count(template);
 	    
 	    ModelAndView mv=new ModelAndView("jsonView");
@@ -147,12 +144,6 @@ public class SpacePojoReadAPIController {
 	    }
 	    response.setHeader("Access-Control-Allow-Origin","*");
         return mv;
-	}
-	
-	@Value("${spaceUrl}")
-	public void initSpaceProxy(String spaceUrl){
-		IJSpace space = new UrlSpaceConfigurer(spaceUrl).space();
-		gigaSpace = new GigaSpaceConfigurer(space).gigaSpace().getClustered();
 	}
 	
 
