@@ -1,4 +1,3 @@
-import org.cloudifysource.dsl.context.* 
 import com.gigaspaces.streaming.client.*
 import com.gigaspaces.streaming.model.*
 
@@ -6,10 +5,15 @@ import com.gigaspaces.streaming.model.*
 
 String[] lines= new File('commands/mobydick.txt').text.split("\\n")
 
-
 //list available streams
+context=null
+try{
+context = org.cloudifysource.dsl.context.ServiceContextFactory.getServiceContext()
+}
+catch(e){
+context = org.cloudifysource.utilitydomain.context.ServiceContextFactory.getServiceContext()
+}
 
-context = ServiceContextFactory.getServiceContext()
 id=context.instanceId
 
 locator=context.attributes.thisService["locator"] 
@@ -54,6 +58,7 @@ while (System.currentTimeMillis()-now < numsecs*1000){
 	}
 
 	xts.writeBatch(batch.toArray(new XAPTuple[0]))
+	println "wrote batch"
 
 	sleepfor=(start+1000)-System.currentTimeMillis()
 	if(sleepfor>0)Thread.sleep(sleepfor)

@@ -35,8 +35,8 @@ service {
 	customCommands ([
 
 		"wordcount-demo": { streamname, numsecs, rate ->
-			xapinstance=util.getServiceInstances(context,"xapstream",1)[0]
-			util.invokeLocal(context,"_wordcount-demo", [ locator:xapinstance.getHostAddress(),streamname:streamname,space:"streamspace",numsecs:numsecs, rate:rate])
+			xapinstance=util.getServiceInstances(context,xapManagementService,1)[0]
+			util.invokeLocal(context,"_wordcount-demo", [ locator:"${xapinstance.getHostAddress()}:${lusPort}",streamname:streamname,space:space,numsecs:numsecs, rate:rate])
 			return true
 		},
 
@@ -66,9 +66,9 @@ write-random count stream-name
 		/* List that assumes defaults */
 
 		"list": {
-			xapinstance=util.getServiceInstances(context,"xapstream",1)[0]
+			xapinstance=util.getServiceInstances(context,xapManagementService,1)[0]
 			util.invokeLocal(context,"_list",[locator:xapinstance.getHostAddress(),
-									spacename:"streamspace"])
+									spacename:xapManagementService])
 			return true
 		},
 
@@ -94,14 +94,14 @@ write-random count stream-name
 		//
 
 		"write-random": { count,streamname ->
-			xapinstance=util.getServiceInstances(context,"xapstream",1)[0]
-			util.invokeLocal(context,"_write-random", [ locator:xapinstance.getHostAddress(),space:"streamspace",count:count,streamname:streamname])
+			xapinstance=util.getServiceInstances(context,xapManagementService,1)[0]
+			util.invokeLocal(context,"_write-random", [ locator:xapinstance.getHostAddress(),space:space,count:count,streamname:streamname])
 			return true
 		},
 
 		"write-sentences": { count, streamname ->
-			xapinstance=util.getServiceInstances(context,"xapstream",1)[0]
-			util.invokeLocal(context,"_write-sentences", [ locator:xapinstance.getHostAddress(),space:"streamspace",count:count,streamname:streamname])
+			xapinstance=util.getServiceInstances(context,xapManagementService,1)[0]
+			util.invokeLocal(context,"_write-sentences", [ locator:xapinstance.getHostAddress(),space:space,count:count,streamname:streamname])
 			return true
 		},
 
