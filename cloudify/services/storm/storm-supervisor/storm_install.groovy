@@ -18,10 +18,15 @@ import java.util.concurrent.TimeUnit
 import groovy.text.SimpleTemplateEngine
 import groovy.util.ConfigSlurper;
 import java.net.InetAddress;
-import org.cloudifysource.dsl.context.ServiceContextFactory
 
+def context=null
+try{
+context = org.cloudifysource.dsl.context.ServiceContextFactory.getServiceContext()
+}
+catch(e){
+context = org.cloudifysource.utilitydomain.context.ServiceContextFactory.getServiceContext()
+}
 
-context=ServiceContextFactory.serviceContext
 config = new ConfigSlurper().parse(new File("storm-service.properties").toURL())
 
 def service = null

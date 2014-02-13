@@ -28,13 +28,13 @@ service {
 	maxAllowedInstances 1
 
     compute {
-        template "SMALL_LINUX"
+        template "MEDIUM_LINUX"
     }
 
 	lifecycle{
 
 
-		init "storm_install.groovy"
+		install "storm_install.groovy"
 		start "storm_start.groovy"
 		preStop "storm_stop.groovy"
 
@@ -115,9 +115,9 @@ service {
 			nimbusService = context.waitForService("storm-nimbus", 60, TimeUnit.SECONDS)
 			assert nimbusService!=null
 			nimbusInstances = nimbusService.waitForInstances(1,60, TimeUnit.SECONDS)				
-			xapService = context.waitForService("xapstream", 60, TimeUnit.SECONDS)
+			xapService = context.waitForService("${xapManagerName}", 60, TimeUnit.SECONDS)
 			xapInstances = xapService.waitForInstances(1,60,TimeUnit.SECONDS)
-			context.attributes.thisService["xapHost"]=xapInstances[0].getHostAddress()
+			context.attributes.thisService["xapHost"]="${xapInstances[0].getHostAddress()}:${lusPort}"
 
 			instanceID = context.getInstanceId()			                       
 			if ( instanceID == nimbusInstances[0].instanceId ) {
